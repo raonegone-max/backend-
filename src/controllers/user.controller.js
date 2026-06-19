@@ -1,7 +1,7 @@
 import {asyncHandler} from "../utils/asyncHandler.js"
-import { ApiError } from "../utils/ApiError.js"
+import ApiError  from "../utils/ApiError.js"
 import { User } from "../models/user.model.js"
-import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import  uploadOnCloudinary  from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 const generateAccessAndRefreshToken=async(userId)=>{
     try{
@@ -88,9 +88,28 @@ const loginUser=asyncHandler(async(req,res)=>{
         user:loggedInUser,accessToken,refreshToken
     },"User logged in successfully"))
 })
-const logoutUser=asyncHandler(async(req,res)=>{
-    res.clearCookie("accessToken")
-    res.clearCookie("refreshToken")
-    return res.status(200).json(new ApiResponse(200,"User logged out successfully"))
+const logoutUser = asyncHandler(async(req, res) => {
+    await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $unset: {
+                refreshToken: 1
+            }
+        },
+        {
+            new: true
+        }
+    )
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+
+    return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "User logged Out"))
 })
-export {registerUser,loginUser}
+export {registerUser,loginUser,logoutUser}
